@@ -23,6 +23,7 @@ Chatrouter.post("/upload", upload.single("file"), async (req, res) => {
     fs.unlinkSync(req.file.path);
     if (extension === "pdf") {
       data = await pdf(dataBuffer);
+      console.log(data.text);
       if(data.text) res.send(data.text);
       else
         res.send(
