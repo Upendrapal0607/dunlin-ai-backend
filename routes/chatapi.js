@@ -23,8 +23,7 @@ Chatrouter.post("/upload", upload.single("file"), async (req, res) => {
     fs.unlinkSync(req.file.path);
     if (extension === "pdf") {
       data = await pdf(dataBuffer);
-      let checkData = data.text.split("\n").join("");
-      if (checkData) res.send(data.text);
+      if(data.text) res.send(data.text);
       else
         res.send(
           "Image pff file can't be read please provide a text contain pdf file"
@@ -92,6 +91,7 @@ Chatrouter.get("/Allhistory/:email", async (req, res) => {
 });
 Chatrouter.get("/history/:id", async (req, res) => {
   const id = req.params.id;
+  console.log({id});
   if (!id) return res.status(400).json({ error: "Invalid ID" });
 
   try {
