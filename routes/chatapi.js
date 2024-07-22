@@ -20,7 +20,7 @@ Chatrouter.post("/upload", upload.single("file"), async (req, res) => {
     let extension = path.split(".").pop().toLowerCase();
     let data = "";
     let dataBuffer = fs.readFileSync(req.file.path);
-    fs.unlinkSync(req.file.path);
+ 
     if (extension === "pdf") {
       data = await pdf(dataBuffer);
       console.log(data.text);
@@ -31,24 +31,23 @@ Chatrouter.post("/upload", upload.single("file"), async (req, res) => {
         );
     } else if (extension === "html") {
       data = fs.readFileSync(req.file.path, "utf8");
-      let checkData = data.split("\n").join("");
-      if (checkData) res.send(data);
+      
+      if (data) res.send(data);
       else
         res.send(
           "Image html file can't be read please provide a text contain html file"
         );
     } else if (["docx", "doc", "docs"].includes(extension)) {
       const { value } = await mammoth.extractRawText({ buffer: dataBuffer });
-      let checkData = value.split("\n").join("");
-      if (checkData) res.send(value);
+      if (value) res.send(value);
       else
         res.send(
           "Image doc file can't be read please provide a text contain doc file"
         );
     } else if (extension === "txt") {
       data = fs.readFileSync(req.file.path, "utf8");
-      let checkData = value.split("\n").join("");
-      if (checkData) res.send(value);
+      console.log(data);
+      if(data)res.send(data);
       else
         res.send(
           "Image txt file can't be read please provide a text contain txt file"
@@ -56,6 +55,7 @@ Chatrouter.post("/upload", upload.single("file"), async (req, res) => {
     } else {
       return res.status(400).json({ error: "Invalid file format" });
     }
+    fs.unlinkSync(req.file.path);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
