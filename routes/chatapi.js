@@ -24,7 +24,7 @@ Chatrouter.post("/upload", upload.single("file"), async (req, res) => {
     if (extension === "pdf") {
       data = await pdf(dataBuffer);
       console.log(data.text);
-      if(data.text) res.send(data.text);
+      if(data) res.send(data.text);
       else
         res.send(
           "Image pff file can't be read please provide a text contain pdf file"
@@ -58,7 +58,7 @@ Chatrouter.post("/upload", upload.single("file"), async (req, res) => {
     fs.unlinkSync(req.file.path);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "File Upload fail" });
   }
 });
 
@@ -75,7 +75,7 @@ Chatrouter.post("/history", async (req, res) => {
       res.json({ message: "Data saved successfully", data: saveData });
     }
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "History add failed" });
   }
 });
 
