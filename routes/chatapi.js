@@ -6,59 +6,117 @@ const fs = require("fs");
 const path = require("path");
 const mammoth = require("mammoth");
 const HistoryModel = require("../model/HistoryModel");
+const os = require('os');
 const Chatrouter = express.Router();
 
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => cb(null, "./public/Files"),
+//   filename: (req, file, cb) => cb(null, `${Date.now()}_${file.originalname}`),
+// });
+// const upload = multer({ storage });
+
+// Chatrouter.post("/upload", upload.single("file"), async (req, res) => {
+//   try {
+//     // let path = req.file.path;
+//     // let extension = path.split(".").pop().toLowerCase();
+//     // let data = "";
+//     // let dataBuffer = fs.readFileSync(req.file.path);
+//     const filePath = req.file.path;
+//     const extension = path.extname(filePath).slice(1).toLowerCase();
+//     const dataBuffer = fs.readFileSync(filePath);
+//     console.log({filePath, extension, dataBuffer});
+ 
+//     if (extension === "pdf") {
+//       data = await pdf(dataBuffer);
+//       if(data) res.send(data.text);
+//       else
+//         res.send(
+//           "Image pff file can't be read please provide a text contain pdf file"
+//         );
+//     } else if (extension === "html") {
+//       data = fs.readFileSync(req.file.path, "utf8");
+      
+//       if (data) res.send(data);
+//       else
+//         res.send(
+//           "Image html file can't be read please provide a text contain html file"
+//         );
+//     } else if (["docx", "doc", "docs"].includes(extension)) {
+//       const { value } = await mammoth.extractRawText({ buffer: dataBuffer });
+//       if (value) res.send(value);
+//       else
+//         res.send(
+//           "Image doc file can't be read please provide a text contain doc file"
+//         );
+//     } else if (extension === "txt") {
+//       data = fs.readFileSync(req.file.path, "utf8");
+//       console.log(data);
+//       if(data)res.send(data);
+//       else
+//         res.send(
+//           "Image txt file can't be read please provide a text contain txt file"
+//         );
+//     } else {
+//       return res.status(400).json({ error: "Invalid file format" });
+//     }
+//     // fs.unlinkSync(req.file.path);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: "File Upload fail" });
+//   }
+// });
+
+
+
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => cb(null, path.join(os.tmpdir(), 'Files')),
+//   filename: (req, file, cb) => cb(null, `${Date.now()}_${file.originalname}`),
+// });
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "./public/Files"),
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(os.tmpdir(), 'Files');
+    fs.mkdirSync(uploadPath, { recursive: true }); // Ensure the directory exists
+    cb(null, uploadPath);
+  },
   filename: (req, file, cb) => cb(null, `${Date.now()}_${file.originalname}`),
 });
 const upload = multer({ storage });
 
-Chatrouter.post("/upload", upload.single("file"), async (req, res) => {
+Chatrouter.post('/upload', upload.single('file'), async (req, res) => {
   try {
-    let path = req.file.path;
-    let extension = path.split(".").pop().toLowerCase();
-    let data = "";
-    let dataBuffer = fs.readFileSync(req.file.path);
- 
-    if (extension === "pdf") {
-      data = await pdf(dataBuffer);
-      console.log(data.text);
-      if(data) res.send(data.text);
-      else
-        res.send(
-          "Image pff file can't be read please provide a text contain pdf file"
-        );
-    } else if (extension === "html") {
-      data = fs.readFileSync(req.file.path, "utf8");
-      
-      if (data) res.send(data);
-      else
-        res.send(
-          "Image html file can't be read please provide a text contain html file"
-        );
-    } else if (["docx", "doc", "docs"].includes(extension)) {
-      const { value } = await mammoth.extractRawText({ buffer: dataBuffer });
-      if (value) res.send(value);
-      else
-        res.send(
-          "Image doc file can't be read please provide a text contain doc file"
-        );
-    } else if (extension === "txt") {
-      data = fs.readFileSync(req.file.path, "utf8");
-      console.log(data);
-      if(data)res.send(data);
-      else
-        res.send(
-          "Image txt file can't be read please provide a text contain txt file"
-        );
+    const filePath = req.file.path;
+    const extension = path.extname(filePath).slice(1).toLowerCase();
+    const dataBuffer = fs.readFileSync(filePath);
+    console.log({filePath, extension, dataBuffer});
+
+    let data;
+    if (extension === 'pdf') {
+      const pdfData = await pdf(dataBuffer);
+      data = pdfData.text;
+    } else if (extension === 'html' || extension === 'txt') {
+      data = fs.readFileSync(filePath, 'utf8');
+    } else if (['docx', 'doc', 'docs'].includes(extension)) {
+      const result = await mammoth.extractRawText({ buffer: dataBuffer });
+      data = result.value;
     } else {
-      return res.status(400).json({ error: "Invalid file format" });
+      return res.status(400).json({ error: 'Invalid file format' });
     }
-    fs.unlinkSync(req.file.path);
+
+    if (data) {
+      res.send(data);
+    } else {
+      res.send(`Could not read the content of the ${extension} file.`);
+    }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "File Upload fail" });
+    console.error('File processing error:', error);
+    res.status(500).json({ error: 'File upload failed' });
+  } finally {
+    // Clean up the temporary file
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
   }
 });
 
