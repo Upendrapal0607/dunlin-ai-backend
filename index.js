@@ -13,7 +13,7 @@ app.use(
 );
 app.use(express.json());
 
-app.get("/", async () => {
+app.get("/", async (req,res) => {
   res.send("Hello from Dudlin Server");
 });
 
